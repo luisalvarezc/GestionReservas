@@ -114,7 +114,7 @@
 </head>
 <body class="min-h-screen text-slate-900">
 
-    <!-- Navbar Minimalista -->
+    <!-- Navegación Superior -->
     <nav class="bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
@@ -137,7 +137,7 @@
 
     <main class="max-w-7xl mx-auto px-6 py-12">
         
-        <!-- CLIENTE: RESERVA -->
+        <!-- VISTA CLIENTE: RESERVA -->
         <section id="view-client" class="view-transition space-y-12">
             <header class="text-center max-w-2xl mx-auto space-y-4">
                 <span class="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">Premium Wellness</span>
@@ -145,7 +145,7 @@
                 <p class="text-slate-500 font-medium">Tratamientos personalizados diseñados para tu bienestar integral.</p>
             </header>
             
-            <!-- Servicios -->
+            <!-- Galería de Servicios -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="servicesGallery"></div>
             
             <div class="grid lg:grid-cols-3 gap-12 pt-8">
@@ -181,20 +181,20 @@
                         </div>
                         
                         <button type="submit" id="submitBtn" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 group">
-                            <span id="btnText">CONFIRMAR RESERVA</span>
+                            <span id="btnText">SOLICITAR RESERVA</span>
                             <div id="btnLoader" class="loader hidden"></div>
                             <i id="btnIcon" class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
                         </button>
                     </form>
                 </div>
                 
-                <!-- Resumen Lateral -->
+                <!-- Resumen de Solicitud -->
                 <div class="space-y-6">
                     <div id="summaryWidget" class="bg-indigo-600 p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-200 text-white min-h-[300px] flex flex-col justify-center items-center text-center transition-all duration-500">
                         <div id="summaryContent" class="space-y-4 opacity-60">
                             <i class="fas fa-hand-pointer text-4xl animate-bounce mb-2"></i>
                             <h3 class="font-bold text-xl">Selecciona un servicio</h3>
-                            <p class="text-xs">Para ver el detalle de inversión y continuar con la reserva.</p>
+                            <p class="text-xs">Para ver el detalle de inversión y continuar con la solicitud.</p>
                         </div>
                     </div>
                     <div class="bg-amber-50 border border-amber-100 p-6 rounded-3xl flex gap-4">
@@ -237,12 +237,12 @@
         </section>
 
         <!-- ADMIN: MÉTRICAS -->
-        <section id="view-stats" class="hidden view-transition grid grid-cols-1 md:grid-cols-3 gap-8" id="statsContainer">
-            <!-- Dinámico -->
+        <section id="view-stats" class="hidden view-transition grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Renderizado dinámico por JS -->
         </section>
     </main>
 
-    <!-- Notificaciones -->
+    <!-- Notificaciones flotantes -->
     <div id="toast" class="fixed bottom-10 right-10 bg-slate-900 text-white px-8 py-5 rounded-2xl shadow-2xl opacity-0 transition-all pointer-events-none z-[100] flex items-center gap-4 translate-y-5">
         <i class="fas fa-check-circle text-emerald-400"></i>
         <span id="toastMsg" class="text-xs font-black uppercase tracking-widest"></span>
@@ -250,10 +250,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuración Firebase (Reemplazar con la tuya si es necesario)
+        // Configuración de Producción
         const firebaseConfig = {
             apiKey: "AIzaSyBpG3NU087mM7qq-0oLduiRkq3blyEVT10",
             authDomain: "reservas-1d13b.firebaseapp.com",
@@ -267,7 +267,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const bookingsCol = collection(db, 'bookings');
-        const MY_PHONE = "50688888888"; 
+        const MY_PHONE = "50688888888"; // Número del Administrador para notificaciones
 
         const SERVICES = {
             "Descontracturante": { price: 25000, icon: "fa-hand-back-fist", color: "indigo", desc: "Tensión extrema" },
@@ -278,19 +278,20 @@
 
         let currentData = [];
 
-        // App Logic
         async function init() {
             await signInAnonymously(auth);
             onSnapshot(query(bookingsCol), (snap) => {
                 currentData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                currentData.sort((a,b) => b.createdAt - a.createdAt);
+                currentData.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 renderTable();
                 renderStats();
             });
         }
 
+        // Renderizado de la Agenda (Admin)
         function renderTable() {
             const body = document.getElementById('adminTableBody');
+            if (!body) return;
             if (currentData.length === 0) {
                 body.innerHTML = '<tr><td colspan="5" class="p-20 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">Sin registros aún</td></tr>';
                 return;
@@ -318,37 +319,41 @@
                     </td>
                     <td class="p-6 text-right whitespace-nowrap">
                         <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="addAdminNote('${b.id}')" class="p-2 text-slate-400 hover:text-amber-500 transition-colors"><i class="fas fa-sticky-note"></i></button>
-                            <button onclick="updateState('${b.id}', 'approved')" class="p-2 text-slate-400 hover:text-emerald-500 transition-colors"><i class="fab fa-whatsapp"></i></button>
-                            <button onclick="updateState('${b.id}', 'completed')" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><i class="fas fa-check-double"></i></button>
-                            <button onclick="deleteRow('${b.id}')" class="p-2 text-slate-400 hover:text-rose-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="addAdminNote('${b.id}')" class="p-2 text-slate-400 hover:text-amber-500 transition-colors" title="Nota interna"><i class="fas fa-sticky-note"></i></button>
+                            <button onclick="updateState('${b.id}', 'approved')" class="p-2 text-slate-400 hover:text-emerald-500 transition-colors" title="Confirmar por WA"><i class="fab fa-whatsapp"></i></button>
+                            <button onclick="updateState('${b.id}', 'completed')" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors" title="Finalizar cita"><i class="fas fa-check-double"></i></button>
+                            <button onclick="deleteRow('${b.id}')" class="p-2 text-slate-400 hover:text-rose-500 transition-colors" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </td>
                 </tr>
             `).join('');
         }
 
+        // Renderizado de Métricas
         function renderStats() {
             const confirmed = currentData.filter(x => x.status !== 'pending');
             const totalCash = confirmed.reduce((acc, x) => acc + (SERVICES[x.type]?.price || 0), 0);
             
-            document.getElementById('view-stats').innerHTML = `
-                <div class="glass-card p-8 rounded-3xl space-y-2">
-                    <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ingresos Proyectados</h5>
-                    <div class="text-4xl font-black text-slate-900 tracking-tight">₡${totalCash.toLocaleString()}</div>
-                    <div class="text-[10px] font-bold text-indigo-500 uppercase">Basado en confirmadas</div>
-                </div>
-                <div class="glass-card p-8 rounded-3xl space-y-2">
-                    <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Citas Totales</h5>
-                    <div class="text-4xl font-black text-slate-900 tracking-tight">${currentData.length}</div>
-                    <div class="text-[10px] font-bold text-emerald-500 uppercase">${confirmed.length} realizadas/confirmadas</div>
-                </div>
-                <div class="glass-card p-8 rounded-3xl space-y-2">
-                    <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Servicio Top</h5>
-                    <div class="text-2xl font-black text-slate-900 tracking-tight uppercase">${getTopService()}</div>
-                    <div class="text-[10px] font-bold text-amber-500 uppercase">Más solicitado</div>
-                </div>
-            `;
+            const statsView = document.getElementById('view-stats');
+            if (statsView) {
+                statsView.innerHTML = `
+                    <div class="glass-card p-8 rounded-3xl space-y-2">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ingresos Proyectados</h5>
+                        <div class="text-4xl font-black text-slate-900 tracking-tight">₡${totalCash.toLocaleString()}</div>
+                        <div class="text-[10px] font-bold text-indigo-500 uppercase">Basado en confirmadas</div>
+                    </div>
+                    <div class="glass-card p-8 rounded-3xl space-y-2">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Citas Totales</h5>
+                        <div class="text-4xl font-black text-slate-900 tracking-tight">${currentData.length}</div>
+                        <div class="text-[10px] font-bold text-emerald-500 uppercase">${confirmed.length} realizadas/confirmadas</div>
+                    </div>
+                    <div class="glass-card p-8 rounded-3xl space-y-2">
+                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Servicio Top</h5>
+                        <div class="text-2xl font-black text-slate-900 tracking-tight uppercase">${getTopService()}</div>
+                        <div class="text-[10px] font-bold text-amber-500 uppercase">Más solicitado</div>
+                    </div>
+                `;
+            }
         }
 
         function getTopService() {
@@ -357,12 +362,14 @@
             return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
         }
 
-        // Acciones Globales
+        // Acciones del Admin
         window.updateState = async (id, status) => {
             const b = currentData.find(x => x.id === id);
             await updateDoc(doc(db, 'bookings', id), { status });
             if(status === 'approved') {
-                const link = `https://wa.me/${b.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`¡Hola ${b.name}! ✨ Confirmamos tu cita para *${b.type}* el *${b.date}* a las *${b.time}*. ¡Nos vemos!`)}`;
+                // Se extrae el número del cliente dinámicamente
+                const cleanedClientPhone = b.phone.replace(/\D/g,'');
+                const link = `https://wa.me/${cleanedClientPhone}?text=${encodeURIComponent(`¡Hola ${b.name}! ✨ Confirmamos tu cita para *${b.type}* el *${b.date}* a las *${b.time}*. ¡Nos vemos!`)}`;
                 window.open(link, '_blank');
             }
             showToast(`Cita ${status === 'completed' ? 'Finalizada' : 'Confirmada'}`);
@@ -392,13 +399,15 @@
             document.body.removeChild(a);
         };
 
-        // UI Interactions
+        // Manejo del Formulario de Reserva
         document.getElementById('bookingForm').onsubmit = async (e) => {
             e.preventDefault();
             const type = document.getElementById('massageType').value;
             if(!type) return showToast("Por favor selecciona un servicio");
 
             const btn = document.getElementById('submitBtn');
+            const clientPhone = document.getElementById('custPhone').value; // Captura número real
+            
             btn.classList.add('btn-loading');
             document.getElementById('btnText').innerText = "ENVIANDO...";
             document.getElementById('btnLoader').classList.remove('hidden');
@@ -406,7 +415,7 @@
 
             const payload = {
                 name: document.getElementById('custName').value,
-                phone: document.getElementById('custPhone').value,
+                phone: clientPhone,
                 type,
                 date: document.getElementById('bookingDate').value,
                 time: document.getElementById('bookingTime').value,
@@ -419,8 +428,8 @@
                 await addDoc(bookingsCol, payload);
                 showToast("¡Solicitud enviada con éxito!");
                 
-                // Aviso al dueño
-                const msg = `💆‍♂️ *YiyiSpace Nuevo Lead*\n👤 *${payload.name}*\n✨ *${payload.type}*\n📅 *${payload.date} @ ${payload.time}*`;
+                // Envío de WhatsApp al Administrador con datos reales del cliente
+                const msg = `💆‍♂️ *YiyiSpace Nuevo Lead*\n👤 *Cliente:* ${payload.name}\n📞 *WhatsApp:* ${payload.phone}\n✨ *Servicio:* ${payload.type}\n📅 *Fecha:* ${payload.date} @ ${payload.time}`;
                 window.open(`https://wa.me/${MY_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
                 
                 e.target.reset();
@@ -428,22 +437,26 @@
                 resetSummary();
             } finally {
                 btn.classList.remove('btn-loading');
-                document.getElementById('btnText').innerText = "CONFIRMAR RESERVA";
+                document.getElementById('btnText').innerText = "SOLICITAR RESERVA";
                 document.getElementById('btnLoader').classList.add('hidden');
                 document.getElementById('btnIcon').classList.remove('hidden');
             }
         };
 
-        document.getElementById('servicesGallery').innerHTML = Object.entries(SERVICES).map(([name, s]) => `
-            <div class="service-card glass-card p-8 rounded-[2rem] text-center cursor-pointer" onclick="selectService(this, '${name}')">
-                <div class="w-16 h-16 bg-${s.color}-50 text-${s.color}-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-inner">
-                    <i class="fas ${s.icon}"></i>
+        // UI: Galería de Servicios
+        const gallery = document.getElementById('servicesGallery');
+        if (gallery) {
+            gallery.innerHTML = Object.entries(SERVICES).map(([name, s]) => `
+                <div class="service-card glass-card p-8 rounded-[2rem] text-center cursor-pointer" onclick="selectService(this, '${name}')">
+                    <div class="w-16 h-16 bg-${s.color}-50 text-${s.color}-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-inner">
+                        <i class="fas ${s.icon}"></i>
+                    </div>
+                    <h4 class="font-black text-slate-800 mb-1">${name}</h4>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">${s.desc}</p>
+                    <div class="text-sm font-black text-indigo-600">₡${s.price.toLocaleString()}</div>
                 </div>
-                <h4 class="font-black text-slate-800 mb-1">${name}</h4>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">${s.desc}</p>
-                <div class="text-sm font-black text-indigo-600">₡${s.price.toLocaleString()}</div>
-            </div>
-        `).join('');
+            `).join('');
+        }
 
         window.selectService = (el, name) => {
             document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
@@ -453,7 +466,7 @@
             const s = SERVICES[name];
             const widget = document.getElementById('summaryWidget');
             widget.classList.remove('bg-indigo-600');
-            widget.style.backgroundColor = '#1e293b'; // Slate 900
+            widget.style.backgroundColor = '#1e293b'; 
             
             document.getElementById('summaryContent').innerHTML = `
                 <div class="animate-in space-y-4">
@@ -467,13 +480,15 @@
 
         function resetSummary() {
             const widget = document.getElementById('summaryWidget');
+            if(!widget) return;
             widget.style.backgroundColor = '';
             widget.classList.add('bg-indigo-600');
-            document.getElementById('summaryContent').classList.add('opacity-60');
-            document.getElementById('summaryContent').innerHTML = `
+            const content = document.getElementById('summaryContent');
+            content.classList.add('opacity-60');
+            content.innerHTML = `
                 <i class="fas fa-hand-pointer text-4xl animate-bounce mb-2"></i>
                 <h3 class="font-bold text-xl">Selecciona un servicio</h3>
-                <p class="text-xs">Para ver el detalle de inversión y continuar con la reserva.</p>`;
+                <p class="text-xs">Para ver el detalle de inversión y continuar con la solicitud.</p>`;
         }
 
         function showToast(m) {
@@ -487,15 +502,25 @@
             }, 3000);
         }
 
-        // Navigation
+        // Navegación SPA
         const vMap = { 'nav-client': 'view-client', 'nav-admin': 'view-admin', 'nav-stats': 'view-stats' };
         Object.keys(vMap).forEach(k => {
-            document.getElementById(k).onclick = () => {
-                Object.values(vMap).forEach(v => document.getElementById(v).classList.add('hidden'));
-                Object.keys(vMap).forEach(nav => document.getElementById(nav).classList.remove('tab-active', 'text-slate-500'));
-                document.getElementById(k).classList.add('tab-active');
-                document.getElementById(vMap[k]).classList.remove('hidden');
-            };
+            const btn = document.getElementById(k);
+            if (btn) {
+                btn.onclick = () => {
+                    Object.values(vMap).forEach(v => {
+                        const section = document.getElementById(v);
+                        if (section) section.classList.add('hidden');
+                    });
+                    Object.keys(vMap).forEach(nav => {
+                        const navBtn = document.getElementById(nav);
+                        if (navBtn) navBtn.classList.remove('tab-active', 'text-slate-500');
+                    });
+                    btn.classList.add('tab-active');
+                    const target = document.getElementById(vMap[k]);
+                    if (target) target.classList.remove('hidden');
+                };
+            }
         });
 
         init();
